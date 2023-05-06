@@ -1,0 +1,69 @@
+{
+  "project_info": {
+    "project_number": "429835768090",
+    "firebase_url": "https://deered---gin-studio-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "deered---gin-studio",
+    "storage_bucket": "deered---gin-studio.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:429835768090:android:559d9a41779f0aa282dca3",
+        "android_client_info": {
+          "package_name": "com.ginstudio.deered"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "429835768090-rd1v4e72lj8tak90euipnnhptsreqrin.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDd8nPMCpi2hzPV4YO9CgXRRK0VUb0f1w8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "429835768090-rd1v4e72lj8tak90euipnnhptsreqrin.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:429835768090:android:09c10dae954ed3ce82dca3",
+        "android_client_info": {
+          "package_name": "com.ginstudio.deeredbeta"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "429835768090-rd1v4e72lj8tak90euipnnhptsreqrin.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDd8nPMCpi2hzPV4YO9CgXRRK0VUb0f1w8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "429835768090-rd1v4e72lj8tak90euipnnhptsreqrin.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
