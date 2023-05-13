@@ -256,18 +256,6 @@
                 android:layout_height="wrap_content"
                 app:constraint_referenced_ids="xlogin" />
 
-            <ImageView
-                android:id="@+id/hiddeneye"
-                android:layout_width="40dp"
-                android:layout_height="42dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.922"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintVertical_bias="0.551"
-                app:srcCompat="@drawable/hiddeneye" />
-
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 

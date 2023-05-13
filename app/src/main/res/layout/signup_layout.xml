@@ -345,29 +345,6 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/inputUsername" />
 
-            <ImageView
-                android:id="@+id/hiddeneye2"
-                android:layout_width="40dp"
-                android:layout_height="42dp"
-                android:layout_marginTop="312dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.925"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:srcCompat="@drawable/hiddeneye" />
-
-            <ImageView
-                android:id="@+id/hiddeneye3"
-                android:layout_width="40dp"
-                android:layout_height="42dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.925"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/hiddeneye2"
-                app:layout_constraintVertical_bias="0.04"
-                app:srcCompat="@drawable/hiddeneye" />
-
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
 

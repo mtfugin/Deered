@@ -6,19 +6,16 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import android.app.ProgressDialog;
 import android.content.res.ColorStateList;
-import android.os.Build;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.text.*;
 import android.widget.Toast;
@@ -26,6 +23,9 @@ import androidx.appcompat.widget.AppCompatEditText;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 public class login_activity extends AppCompatActivity {
 
@@ -55,6 +55,10 @@ public class login_activity extends AppCompatActivity {
     FirebaseAuth mAuth;
     FirebaseUser mUser;
 
+    // Firebase & Firestore Database connection
+    FirebaseAuth auth = FirebaseAuth.getInstance();
+    FirebaseFirestore db = FirebaseFirestore.getInstance();
+
     private void PerformAuthentication() {
         String emailLog = inputEmail.getText().toString();
         String passwordLog = inputPass.getText().toString();
@@ -78,26 +82,58 @@ public class login_activity extends AppCompatActivity {
             progressDialog.setCanceledOnTouchOutside(false);
             progressDialog.show();
 
-            mAuth.signInWithEmailAndPassword(emailLog, passwordLog).addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    progressDialog.dismiss();
-                    sendUserToNextActivity();
-                    Toast.makeText(login_activity.this, "Logged in successfully!", Toast.LENGTH_SHORT).show();
-                } else {
-                    progressDialog.dismiss();
-                    Toast.makeText(login_activity.this, "" + task.getException(), Toast.LENGTH_SHORT).show();
-                }
-            });
+
+
+                mAuth.signInWithEmailAndPassword(emailLog, passwordLog).addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        AtomicReference<String> getIdentify = new AtomicReference<>();
+                        db.collection("user").document(emailLog)
+                                .get()
+                                .addOnSuccessListener(documentSnapshot -> {
+                                    if (documentSnapshot.exists()) {
+                                        // Get the identity
+                                        String identity = documentSnapshot.getString("Identifier");
+                                        if (identity != null) {
+                                            if (identity.equals("Student")) {
+                                                sendUserToNextActivityStudent();
+                                            } else if (identity.equals("Instructor")) {
+                                                sendUserToNextActivityInstructor();
+                                            } else {
+                                                Toast.makeText(login_activity.this, "Invalid user identity: " + identity, Toast.LENGTH_SHORT).show();
+                                            }
+                                        } else {
+                                            Toast.makeText(login_activity.this, "User identity not found", Toast.LENGTH_SHORT).show();
+                                        }
+                                    } else {
+                                        // User document not found
+                                        Toast.makeText(login_activity.this, "There was an error getting user info!", Toast.LENGTH_SHORT).show();
+                                    }
+                                });
+
+                        progressDialog.dismiss();
+                        Toast.makeText(login_activity.this, "Logged in successfully!", Toast.LENGTH_SHORT).show();
+                    } else {
+                        progressDialog.dismiss();
+                        Toast.makeText(login_activity.this, "" + task.getException(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+
         }
     }
 
-    private void sendUserToNextActivity() {
-        Intent intent = new Intent(login_activity.this, home_activity.class);
+    private void sendUserToNextActivityStudent() {
+        Intent intent = new Intent(login_activity.this, homestudent_activity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
     }
 
-    @SuppressLint({"ClickableViewAccessibility", "MissingInflatedId"})
+    private void sendUserToNextActivityInstructor() {
+        Intent intent = new Intent(login_activity.this, homeinstructor_activity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+    }
+
+    @SuppressLint({"ClickableViewAccessibility", "MissingInflatedId", "RestrictedApi", "SetTextI18n", "UseCompatLoadingForDrawables"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -134,22 +170,19 @@ public class login_activity extends AppCompatActivity {
 
         // Set up a listener to detect when the keyboard is opened or closed
         View rootView = findViewById(android.R.id.content);
-        rootView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                int heightDiff = rootView.getRootView().getHeight() - rootView.getHeight();
-                if (heightDiff > 200) { // arbitrary value, adjust as needed
-                    // Keyboard is open, hide the elements
-                    logoCon.setVisibility(View.GONE);
-                    copyRight.setVisibility(View.GONE);
-                    rootLayout.setBackgroundColor(Color.WHITE);
+        rootView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            int heightDiff = rootView.getRootView().getHeight() - rootView.getHeight();
+            if (heightDiff > 200) { // arbitrary value, adjust as needed
+                // Keyboard is open, hide the elements
+                logoCon.setVisibility(View.GONE);
+                copyRight.setVisibility(View.GONE);
+                rootLayout.setBackgroundColor(Color.WHITE);
 
-                } else {
-                    // Keyboard is closed, show the elements
-                    logoCon.setVisibility(View.VISIBLE);
-                    copyRight.setVisibility(View.VISIBLE);
-                    rootLayout.setBackgroundResource(R.drawable.backdrop);
-                }
+            } else {
+                // Keyboard is closed, show the elements
+                logoCon.setVisibility(View.VISIBLE);
+                copyRight.setVisibility(View.VISIBLE);
+                rootLayout.setBackgroundResource(R.drawable.backdrop);
             }
         });
 
@@ -164,127 +197,109 @@ public class login_activity extends AppCompatActivity {
         loginButton.setOnClickListener(view -> PerformAuthentication());
 
         // Set up a listener to change the color and text of the login button on click
-        loginButton.setOnTouchListener(new View.OnTouchListener() {
-            @SuppressLint("RestrictedApi")
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                switch(event.getAction()) {
+        loginButton.setOnTouchListener((v, event) -> {
+            switch(event.getAction()) {
 
-                    // When Log In Button is Pressed
-                    case MotionEvent.ACTION_DOWN:
-                        loginButton.setTextColor(Color.BLACK);
-                        loginButton.setBackgroundColor(Color.parseColor("#9AF8C9"));
-                        loginButton.setText("Logging in...");
+                // When Log In Button is Pressed
+                case MotionEvent.ACTION_DOWN:
+                    loginButton.setTextColor(Color.BLACK);
+                    loginButton.setBackgroundColor(Color.parseColor("#9AF8C9"));
+                    loginButton.setText("Logging in...");
 
-                        // If Intitutional Email is empty turn the backgroundTint and Hint red, if not then turn to original
-                        if (!TextUtils.isEmpty(inputEmail.getText().toString())) {
-                            inputEmail.setHintTextColor(origColor);
-                            if (inputEmail instanceof AppCompatEditText) {
-                                ((AppCompatEditText) inputEmail).setSupportBackgroundTintList(origColorStateList);
-                            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                                inputEmail.setBackgroundTintList(origColorStateList);
-                            }
+                    // If Institutional Email is empty turn the backgroundTint and Hint red, if not then turn to original
+                    if (!TextUtils.isEmpty(inputEmail.getText().toString())) {
+                        inputEmail.setHintTextColor(origColor);
+                        if (inputEmail instanceof AppCompatEditText) {
+                            ((AppCompatEditText) inputEmail).setSupportBackgroundTintList(origColorStateList);
                         } else {
-                            inputEmail.setHintTextColor(redColor);
-                            if (inputEmail instanceof AppCompatEditText) {
-                                ((AppCompatEditText) inputEmail).setSupportBackgroundTintList(redColorStateList);
-                            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                                inputEmail.setBackgroundTintList(redColorStateList);
-                            }
+                            inputEmail.setBackgroundTintList(origColorStateList);
                         }
-
-
-
-                        // If Password is empty turn the backgroundTint and Hint red
-                        if (!TextUtils.isEmpty(inputPass.getText().toString())) {
-                            inputPass.setHintTextColor(origColor);
-                            if (inputPass instanceof AppCompatEditText) {
-                                ((AppCompatEditText) inputPass).setSupportBackgroundTintList(origColorStateList);
-                            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                                inputPass.setBackgroundTintList(origColorStateList);
-                            }
+                    } else {
+                        inputEmail.setHintTextColor(redColor);
+                        if (inputEmail instanceof AppCompatEditText) {
+                            ((AppCompatEditText) inputEmail).setSupportBackgroundTintList(redColorStateList);
                         } else {
-                            inputPass.setHintTextColor(redColor);
-                            if (inputPass instanceof AppCompatEditText) {
-                                ((AppCompatEditText) inputPass).setSupportBackgroundTintList(redColorStateList);
-                            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                                inputPass.setBackgroundTintList(redColorStateList);
-                            }
+                            inputEmail.setBackgroundTintList(redColorStateList);
                         }
-                        break;
+                    }
 
-                    // When Log In Button is Released
-                    case MotionEvent.ACTION_UP:
-                        try {
-                            Thread.sleep(200);
-                        } catch (InterruptedException e) {
-                            throw new RuntimeException(e);
+
+
+                    // If Password is empty turn the backgroundTint and Hint red
+                    if (!TextUtils.isEmpty(inputPass.getText().toString())) {
+                        inputPass.setHintTextColor(origColor);
+                        if (inputPass instanceof AppCompatEditText) {
+                            ((AppCompatEditText) inputPass).setSupportBackgroundTintList(origColorStateList);
+                        } else {
+                            inputPass.setBackgroundTintList(origColorStateList);
                         }
-                        loginButton.setTextColor(Color.WHITE);
-                        loginButton.setBackgroundColor(Color.BLACK);
-                        loginButton.setText("Login");
-                        break;
-                }
-                return false;
+                    } else {
+                        inputPass.setHintTextColor(redColor);
+                        if (inputPass instanceof AppCompatEditText) {
+                            ((AppCompatEditText) inputPass).setSupportBackgroundTintList(redColorStateList);
+                        } else {
+                            inputPass.setBackgroundTintList(redColorStateList);
+                        }
+                    }
+                    break;
+
+                // When Log In Button is Released
+                case MotionEvent.ACTION_UP:
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    loginButton.setTextColor(Color.WHITE);
+                    loginButton.setBackgroundColor(Color.BLACK);
+                    loginButton.setText("Login");
+                    break;
             }
+            return false;
         });
 
-        // This is to listen if cursor is visible in Intitutional Email EditText,
+        // This is to listen if cursor is visible in Institutional Email EditText,
         // and if so.. then turn it back to original.
-        inputEmail.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
+        inputEmail.setOnFocusChangeListener((v, hasFocus) -> {
 
-                if (hasFocus) {
-                    inputEmail.post(new Runnable() {
-                        @SuppressLint("RestrictedApi")
-                        @Override
-                        public void run() {
-                            // Check if the text cursor is visible
-                            if (inputEmail.isCursorVisible()) {
-                                // Change the hint text color of inputEmail to #89898A
-                                inputEmail.setHint("Institutional Email");
-                                inputEmail.setHintTextColor(Color.parseColor("#89898A"));
-                                if (inputEmail instanceof AppCompatEditText) {
-                                    ((AppCompatEditText) inputEmail).setSupportBackgroundTintList(origColorStateList);
-                                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                                    inputEmail.setBackgroundTintList(origColorStateList);
-                                }
-                            }
+            if (hasFocus) {
+                inputEmail.post(() -> {
+                    // Check if the text cursor is visible
+                    if (inputEmail.isCursorVisible()) {
+                        // Change the hint text color of inputEmail to #89898A
+                        inputEmail.setHint("Institutional Email");
+                        inputEmail.setHintTextColor(Color.parseColor("#89898A"));
+                        if (inputEmail instanceof AppCompatEditText) {
+                            ((AppCompatEditText) inputEmail).setSupportBackgroundTintList(origColorStateList);
+                        } else {
+                            inputEmail.setBackgroundTintList(origColorStateList);
                         }
-                    });
-                }
-
+                    }
+                });
             }
+
         });
 
         // This is to listen if cursor is visible in Password EditText,
         // and if so.. then turn it back to original.
-        inputPass.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-            @Override
-            public void onFocusChange(View v, boolean hasFocus) {
+        inputPass.setOnFocusChangeListener((v, hasFocus) -> {
 
-                if (hasFocus) {
-                    inputPass.post(new Runnable() {
-                        @SuppressLint("RestrictedApi")
-                        @Override
-                        public void run() {
-                            // Check if the text cursor is visible
-                            if (inputPass.isCursorVisible()) {
-                                // Change the hint text color of inputEmail to #89898A
-                                inputPass.setHint("Password");
-                                inputPass.setHintTextColor(Color.parseColor("#89898A"));
-                                if (inputPass instanceof AppCompatEditText) {
-                                    ((AppCompatEditText) inputPass).setSupportBackgroundTintList(origColorStateList);
-                                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                                    inputPass.setBackgroundTintList(origColorStateList);
-                                }
-                            }
+            if (hasFocus) {
+                inputPass.post(() -> {
+                    // Check if the text cursor is visible
+                    if (inputPass.isCursorVisible()) {
+                        // Change the hint text color of inputEmail to #89898A
+                        inputPass.setHint("Password");
+                        inputPass.setHintTextColor(Color.parseColor("#89898A"));
+                        if (inputPass instanceof AppCompatEditText) {
+                            ((AppCompatEditText) inputPass).setSupportBackgroundTintList(origColorStateList);
+                        } else {
+                            inputPass.setBackgroundTintList(origColorStateList);
                         }
-                    });
-                }
-
+                    }
+                });
             }
+
         });
 
         // if Institutional Email text changes, turn the backgroundTint to original
@@ -299,7 +314,7 @@ public class login_activity extends AppCompatActivity {
                     inputEmail.setHintTextColor(Color.parseColor("#89898A"));
                     if (inputEmail instanceof AppCompatEditText) {
                         ((AppCompatEditText) inputEmail).setSupportBackgroundTintList(origColorStateList);
-                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    } else {
                         inputEmail.setBackgroundTintList(origColorStateList);
                     }
                 }
@@ -328,7 +343,7 @@ public class login_activity extends AppCompatActivity {
                     inputPass.setHintTextColor(Color.parseColor("#89898A"));
                     if (inputPass instanceof AppCompatEditText) {
                         ((AppCompatEditText) inputPass).setSupportBackgroundTintList(origColorStateList);
-                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    } else {
                         inputPass.setBackgroundTintList(origColorStateList);
                     }
                 }
@@ -345,45 +360,9 @@ public class login_activity extends AppCompatActivity {
             }
         });
 
-        // When xsignup & signuptext EditText is pressed go to signup_activity
-        xsignup.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(login_activity.this, signup_activity.class));
-            }
-        });
-        signuptext.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(login_activity.this, signup_activity.class));
-            }
-        });
-
-        // CheckBox - Disabled feature for now // TODO: "Rememberme Check Box"
-        rememberme.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                rememberme.setChecked(false);
-            }
-        });
-
-        ImageView hiddeneye = findViewById(R.id.hiddeneye);
-
-        hiddeneye.setVisibility(View.GONE);
-
-        hiddeneye.setOnClickListener(new View.OnClickListener() {
-            @SuppressLint("UseCompatLoadingForDrawables")
-            @Override
-            public void onClick(View v) {
-                if (hiddeneye.getDrawable().getConstantState().equals(getResources().getDrawable(R.drawable.showneye).getConstantState())) {
-                    hiddeneye.setImageResource(R.drawable.hiddeneye);
-                    inputPass.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-                } else {
-                    hiddeneye.setImageResource(R.drawable.showneye);
-                    inputPass.setInputType(InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-                }
-            }
-        });
+        // This function as activity switcher when "Don't have an account? Sign Up" is tapped.
+        xsignup.setOnClickListener(v -> startActivity(new Intent(login_activity.this, signup_activity.class)));
+        signuptext.setOnClickListener(v -> startActivity(new Intent(login_activity.this, signup_activity.class)));
 
         // Don't delete below (For safety purposes haha)
     }
